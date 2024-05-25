@@ -95,7 +95,7 @@ public class AuthManager {
         if (includeEmail != null) builder.appendQueryParameter("include_email", includeEmail);
         if (includeProfile != null) builder.appendQueryParameter("include_profile", includeEmail);
         String query = builder.build().getEncodedQuery();
-        return packageName + ":" + getPackageSignature() + ":" + service + (query != null ? ("?" + query) : "");
+        return PackageSpoofUtils.spoofPackageName(context.getPackageManager(), packageName) + ":" + getPackageSignature() + ":" + service + (query != null ? ("?" + query) : "");
     }
 
     public String buildTokenKey() {
