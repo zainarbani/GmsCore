@@ -43,6 +43,7 @@ import com.google.android.gms.auth.TokenData;
 import com.google.android.gms.common.api.Scope;
 
 import org.microg.gms.common.GooglePackagePermission;
+import org.microg.gms.common.PackageSpoofUtils;
 import org.microg.gms.common.PackageUtils;
 
 import java.io.IOException;
@@ -84,6 +85,8 @@ public class AuthManagerServiceImpl extends IAuthManagerService.Stub {
 
     @Override
     public Bundle getToken(String accountName, String scope, Bundle extras) {
+        extras.putString(KEY_ANDROID_PACKAGE_NAME, PackageSpoofUtils.spoofPackageName(context.getPackageManager(), extras.getString(KEY_ANDROID_PACKAGE_NAME)));
+        extras.putString(KEY_CLIENT_PACKAGE_NAME, PackageSpoofUtils.spoofPackageName(context.getPackageManager(), extras.getString(KEY_CLIENT_PACKAGE_NAME)));
         return getTokenWithAccount(new Account(accountName, AuthConstants.DEFAULT_ACCOUNT_TYPE), scope, extras);
     }
 
