@@ -85,8 +85,6 @@ public class AuthManagerServiceImpl extends IAuthManagerService.Stub {
 
     @Override
     public Bundle getToken(String accountName, String scope, Bundle extras) {
-        extras.putString(KEY_ANDROID_PACKAGE_NAME, PackageSpoofUtils.spoofPackageName(context.getPackageManager(), extras.getString(KEY_ANDROID_PACKAGE_NAME)));
-        extras.putString(KEY_CLIENT_PACKAGE_NAME, PackageSpoofUtils.spoofPackageName(context.getPackageManager(), extras.getString(KEY_CLIENT_PACKAGE_NAME)));
         return getTokenWithAccount(new Account(accountName, AuthConstants.DEFAULT_ACCOUNT_TYPE), scope, extras);
     }
 
@@ -115,6 +113,8 @@ public class AuthManagerServiceImpl extends IAuthManagerService.Stub {
 
     @Override
     public Bundle getTokenWithAccount(Account account, String scope, Bundle extras) {
+        extras.putString(KEY_ANDROID_PACKAGE_NAME, PackageSpoofUtils.spoofPackageName(context.getPackageManager(), extras.getString(KEY_ANDROID_PACKAGE_NAME)));
+        extras.putString(KEY_CLIENT_PACKAGE_NAME, PackageSpoofUtils.spoofPackageName(context.getPackageManager(), extras.getString(KEY_CLIENT_PACKAGE_NAME)));
         String packageName = extras.getString(KEY_ANDROID_PACKAGE_NAME);
         if (packageName == null || packageName.isEmpty())
             packageName = extras.getString(KEY_CLIENT_PACKAGE_NAME);
@@ -248,6 +248,8 @@ public class AuthManagerServiceImpl extends IAuthManagerService.Stub {
     @Override
     @SuppressLint("MissingPermission") // Workaround bug in Android Linter
     public Bundle clearToken(String token, Bundle extras) {
+        extras.putString(KEY_ANDROID_PACKAGE_NAME, PackageSpoofUtils.spoofPackageName(context.getPackageManager(), extras.getString(KEY_ANDROID_PACKAGE_NAME)));
+        extras.putString(KEY_CLIENT_PACKAGE_NAME, PackageSpoofUtils.spoofPackageName(context.getPackageManager(), extras.getString(KEY_CLIENT_PACKAGE_NAME)));
         String packageName = extras.getString(KEY_ANDROID_PACKAGE_NAME);
         if (packageName == null) packageName = extras.getString(KEY_CLIENT_PACKAGE_NAME);
         packageName = PackageUtils.getAndCheckCallingPackage(context, packageName, extras.getInt(KEY_CALLER_UID, 0), extras.getInt(KEY_CALLER_PID, 0));
