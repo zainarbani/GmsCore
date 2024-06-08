@@ -9,6 +9,7 @@ import android.content.Context;
 import android.media.MediaDrm;
 import android.util.Log;
 
+import org.microg.gms.common.PackageSpoofUtils;
 import org.microg.gms.droidguard.core.FallbackCreator;
 import org.microg.gms.settings.SettingsContract;
 
@@ -29,7 +30,7 @@ public class GuardCallback {
 
     public GuardCallback(Context context, String packageName) {
         this.context = context;
-        this.packageName = packageName;
+        this.packageName = PackageSpoofUtils.spoofPackageName(context.getPackageManager(), packageName);
     }
 
     public final String a(final byte[] array) {
