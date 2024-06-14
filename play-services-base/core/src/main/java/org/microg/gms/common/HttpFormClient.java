@@ -35,7 +35,7 @@ public class HttpFormClient {
     private static final String TAG = "GmsHttpFormClient";
 
     public static <T> T request(String url, Request request, Class<T> tClass) throws IOException {
-        String newUrl = url.replace('app.revanced.android.youtube', 'com.google.android.youtube');
+        String newUrl = url.replace("app.revanced.android.youtube", "com.google.android.youtube");
         HttpURLConnection connection = (HttpURLConnection) new URL(newUrl).openConnection();
         connection.setRequestMethod("POST");
         connection.setDoInput(true);
