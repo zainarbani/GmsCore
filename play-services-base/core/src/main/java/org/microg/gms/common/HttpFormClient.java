@@ -72,6 +72,9 @@ public class HttpFormClient {
                     value = valueFromBoolVal(value, boolVal, annotation.truePresent(), annotation.falsePresent());
                     if (value != null || annotation.nullPresent()) {
                         for (String key : annotation.value()) {
+                            if (key.equals("app")) {
+                                value = (value.contains("android.youtube")) ? "com.google.android.youtube" : value;
+                            }
                             appendParam(content, key, value);
                         }
                     }
