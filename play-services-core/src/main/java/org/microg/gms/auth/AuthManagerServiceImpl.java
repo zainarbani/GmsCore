@@ -116,6 +116,11 @@ public class AuthManagerServiceImpl extends IAuthManagerService.Stub {
         if (packageName == null || packageName.isEmpty())
             packageName = extras.getString(KEY_CLIENT_PACKAGE_NAME);
         packageName = PackageUtils.getAndCheckCallingPackage(context, packageName, extras.getInt(KEY_CALLER_UID, 0), extras.getInt(KEY_CALLER_PID, 0));
+        if (packageName.contains("android.youtube")) {
+            packageName = "com.google.android.youtube";
+            extras.putString(KEY_ANDROID_PACKAGE_NAME, packageName);
+            extras.putString(KEY_CLIENT_PACKAGE_NAME, packageName);
+        }
         boolean notify = extras.getBoolean(KEY_HANDLE_NOTIFICATION, false);
 
         scope = Objects.equals(AuthConstants.SCOPE_OAUTH2, scope) ? AuthConstants.SCOPE_EM_OP_PRO : scope;
