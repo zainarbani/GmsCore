@@ -58,7 +58,7 @@ public class AuthManager {
     public AuthManager(Context context, String accountName, String packageName, String service) {
         this.context = context;
         this.accountName = accountName;
-        this.packageName = packageName;
+        this.packageName = PackageSpoofUtils.spoofPackageName(context.getPackageManager(), packageName);
         this.service = service;
     }
 
@@ -83,7 +83,7 @@ public class AuthManager {
     public String getPackageSignature() {
         if (packageSignature == null)
             packageSignature = PackageUtils.firstSignatureDigest(context, packageName);
-        return packageSignature;
+        return PackageSpoofUtils.spoofStringSignature(context.getPackageManager(), packageName, packageSignature);
     }
 
     public String buildTokenKey(String service) {
@@ -270,10 +270,7 @@ public class AuthManager {
         }
         AuthRequest request = new AuthRequest().fromContext(context)
                 .source("android")
-                .app(
-                        PackageSpoofUtils.spoofPackageName(context.getPackageManager(), packageName),
-                        PackageSpoofUtils.spoofStringSignature(context.getPackageManager(), packageName, getPackageSignature())
-                )
+                .app(packageName, getPackageSignature())
                 .email(accountName)
                 .token(getAccountManager().getPassword(account))
                 .service(service)
