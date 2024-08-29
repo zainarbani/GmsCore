@@ -15,12 +15,14 @@ import com.google.android.gms.droidguard.internal.DroidGuardResultsRequest
 import dalvik.system.DexClassLoader
 import okio.ByteString.Companion.decodeHex
 import okio.ByteString.Companion.of
+import org.microg.gms.common.PackageSpoofUtils;
 import org.microg.gms.droidguard.*
 import org.microg.gms.profile.Build
 import org.microg.gms.profile.ProfileManager
 import org.microg.gms.utils.singleInstanceOf
 import java.io.File
 import java.io.IOException
+import java.nio.ByteBuffer
 import java.security.MessageDigest
 import java.security.cert.Certificate
 import java.util.*
@@ -66,10 +68,55 @@ class HandleProxyFactory(private val context: Context) {
         return dgDb.get(id)
     }
 
+    fun createRequestTest(pingData: PingData? = null, extra: ByteArray? = null): RequestTest {
+        ProfileManager.ensureInitialized(context)
+        val expressLong = ByteBuffer.wrap("_express".reversed().toByteArray()).long
+        return RequestTest(
+                usage = UsageTest(Flow(105, expressLong), "com.android.vending"),
+                info = listOf(
+                        KeyValuePair("BOARD", Build.BOARD),
+                        KeyValuePair("BOOTLOADER", Build.BOOTLOADER),
+                        KeyValuePair("BRAND", Build.BRAND),
+                        KeyValuePair("CPU_ABI", Build.CPU_ABI),
+                        KeyValuePair("CPU_ABI2", Build.CPU_ABI2),
+                        KeyValuePair("SUPPORTED_ABIS", Build.SUPPORTED_ABIS.joinToString(",")),
+                        KeyValuePair("DEVICE", Build.DEVICE),
+                        KeyValuePair("DISPLAY", Build.DISPLAY),
+                        KeyValuePair("FINGERPRINT", Build.FINGERPRINT),
+                        KeyValuePair("HARDWARE", Build.HARDWARE),
+                        KeyValuePair("HOST", Build.HOST),
+                        KeyValuePair("ID", Build.ID),
+                        KeyValuePair("MANUFACTURER", Build.MANUFACTURER),
+                        KeyValuePair("MODEL", Build.MODEL),
+                        KeyValuePair("PRODUCT", Build.PRODUCT),
+                        KeyValuePair("RADIO", Build.RADIO),
+                        KeyValuePair("SERIAL", Build.SERIAL),
+                        KeyValuePair("TAGS", Build.TAGS),
+                        KeyValuePair("TIME", Build.TIME.toString()),
+                        KeyValuePair("TYPE", Build.TYPE),
+                        KeyValuePair("USER", Build.USER),
+                        KeyValuePair("VERSION.CODENAME", Build.VERSION.CODENAME),
+                        KeyValuePair("VERSION.INCREMENTAL", Build.VERSION.INCREMENTAL),
+                        KeyValuePair("VERSION.RELEASE", Build.VERSION.RELEASE),
+                        KeyValuePair("VERSION.SDK", Build.VERSION.SDK),
+                        KeyValuePair("VERSION.SDK_INT", Build.VERSION.SDK_INT.toString()),
+                ),
+                versionName = version.versionString,
+                versionCode = BuildConfig.VERSION_CODE,
+                hasAccount = false,
+                isGoogleCn = false,
+                enableInlineVm = true,
+                cached = getCacheDir().list()?.map { it.decodeHex() }.orEmpty(),
+                arch = System.getProperty("os.arch"),
+                ping = pingData,
+                field10 = extra?.let { of(*it) },
+        )
+    }
+    
     fun createRequest(flow: String?, packageName: String, pingData: PingData? = null, extra: ByteArray? = null): Request {
         ProfileManager.ensureInitialized(context)
         return Request(
-                usage = Usage(flow, packageName),
+                usage = Usage(flow, PackageSpoofUtils.spoofPackageName(context.getPackageManager(), packageName)),
                 info = listOf(
                         KeyValuePair("BOARD", Build.BOARD),
                         KeyValuePair("BOOTLOADER", Build.BOOTLOADER),
@@ -111,7 +158,61 @@ class HandleProxyFactory(private val context: Context) {
     }
 
     fun fetchFromServer(flow: String?, packageName: String): Triple<String, ByteArray, ByteArray> {
+        if (flow?.contains("po-token-fast") == true) {
+            return fetchFromServerTest(flow, createRequestTest())
+        }
         return fetchFromServer(flow, createRequest(flow, packageName))
+    }
+
+    fun fetchFromServerTest(flow: String?, request: RequestTest): Triple<String, ByteArray, ByteArray> {
+        ProfileManager.ensureInitialized(context)
+        val future = RequestFuture.newFuture<SignedResponse>()
+        queue.add(object : VolleyRequest<SignedResponse>(Method.POST, SERVER_URL, future) {
+            override fun parseNetworkResponse(response: NetworkResponse): VolleyResponse<SignedResponse> {
+                return try {
+                    VolleyResponse.success(SignedResponse.ADAPTER.decode(response.data), null)
+                } catch (e: Exception) {
+                    VolleyResponse.error(VolleyError(e))
+                }
+            }
+
+            override fun deliverResponse(response: SignedResponse) {
+                future.onResponse(response)
+            }
+
+            override fun getBody(): ByteArray = request.encode()
+
+            override fun getBodyContentType(): String = "application/x-protobuf"
+
+            override fun getHeaders(): Map<String, String> {
+                return mapOf(
+                        "User-Agent" to "DroidGuard/${version.versionCode}"
+                )
+            }
+        })
+        val signed: SignedResponse = future.get()
+        val response = signed.unpack()
+        val vmKey = response.vmChecksum!!.hex()
+        if (!isValidCache(vmKey)) {
+            val temp = File(getCacheDir(), "${UUID.randomUUID()}.apk")
+            temp.parentFile!!.mkdirs()
+            temp.writeBytes(response.content!!.toByteArray())
+            getOptDir(vmKey).mkdirs()
+            temp.renameTo(getTheApkFile(vmKey))
+            updateCacheTimestamp(vmKey)
+            if (!isValidCache(vmKey)) {
+                getCacheDir(vmKey).deleteRecursively()
+                throw IllegalStateException()
+            }
+        }
+        val id = "$flow/${version.versionString}/${Build.FINGERPRINT}"
+        val expiry = (response.expiryTimeSecs ?: 0).toLong()
+        val byteCode = response.byteCode?.toByteArray() ?: ByteArray(0)
+        val extra = response.extra?.toByteArray() ?: ByteArray(0)
+        if (response.save != false) {
+            dgDb.put(id, expiry, vmKey, byteCode, extra)
+        }
+        return Triple(vmKey, byteCode, extra)
     }
 
     fun fetchFromServer(flow: String?, request: Request): Triple<String, ByteArray, ByteArray> {

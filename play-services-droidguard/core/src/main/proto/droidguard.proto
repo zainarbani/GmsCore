@@ -10,6 +10,16 @@ message Usage {
     optional string packageName = 2;
 }
 
+message UsageTest {
+    optional Flow flow = 1;
+    optional string packageName = 2;
+}
+
+message Flow {
+    optional int32 field1 = 14;
+    optional fixed64 field2 = 12;
+}
+
 message KeyValuePair {
     optional string key = 1;
     optional string val = 2;
@@ -40,6 +50,23 @@ message PingData {
 
 message Request {
     optional Usage usage = 1;
+    repeated KeyValuePair info = 2;
+    optional string versionName = 3;
+    optional bool hasAccount = 6;
+    optional bool isGoogleCn = 7;
+    optional bool enableInlineVm = 8;
+    repeated bytes cached = 9;
+    optional bytes field10 = 10;
+    optional int32 field11 = 11;
+    optional ExceptionList exceptions = 12;
+    optional int32 versionCode = 13;
+    optional string arch = 14;
+    optional int32 field15 = 15;
+    optional PingData ping = 16;
+}
+
+message RequestTest {
+    optional UsageTest usage = 1;
     repeated KeyValuePair info = 2;
     optional string versionName = 3;
     optional bool hasAccount = 6;

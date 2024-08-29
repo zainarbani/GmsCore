@@ -138,7 +138,7 @@ class PoTokenHelper(context: Context) {
             }
 
             override fun getHeaders(): Map<String, String> {
-                return mapOf("User-Agent" to "GmsCore/${Constants.GMS_VERSION_CODE} (${Build.DEVICE} ${Build.ID}); gzip")
+                return mapOf("User-Agent" to "com.google.android.gms/${Constants.GMS_VERSION_CODE} (Linux; U; Android ${Build.VERSION.RELEASE}; ${Build.DEVICE} ${Build.ID}); gzip")
             }
 
             override fun getBody(): ByteArray {
