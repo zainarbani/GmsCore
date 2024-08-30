@@ -38,7 +38,8 @@ class HandleProxyFactory(private val context: Context) {
 
     fun createHandle(packageName: String, flow: String?, callback: GuardCallback, request: DroidGuardResultsRequest?): HandleProxy {
         if (!DroidGuardPreferences.isLocalAvailable(context)) throw IllegalAccessException("DroidGuard should not be available locally")
-        val (vmKey, byteCode, bytes) = readFromDatabase(flow) ?: fetchFromServer(flow, packageName)
+        val newFlow = if (flow?.contains("yt_player") == true) "po-token-fast" else flow
+        val (vmKey, byteCode, bytes) = readFromDatabase(newFlow) ?: fetchFromServer(flow, packageName)
         return createHandleProxy(flow, vmKey, byteCode, bytes, callback, request)
     }
 
