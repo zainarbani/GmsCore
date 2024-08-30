@@ -38,8 +38,7 @@ class HandleProxyFactory(private val context: Context) {
 
     fun createHandle(packageName: String, flow: String?, callback: GuardCallback, request: DroidGuardResultsRequest?): HandleProxy {
         if (!DroidGuardPreferences.isLocalAvailable(context)) throw IllegalAccessException("DroidGuard should not be available locally")
-        val newFlow = if (flow?.contains("yt_player") == true) "po-token-fast" else flow
-        val (vmKey, byteCode, bytes) = readFromDatabase(newFlow) ?: fetchFromServer(flow, packageName)
+        val (vmKey, byteCode, bytes) = readFromDatabase(flow) ?: fetchFromServer(flow, packageName)
         return createHandleProxy(flow, vmKey, byteCode, bytes, callback, request)
     }
 
@@ -71,9 +70,9 @@ class HandleProxyFactory(private val context: Context) {
 
     fun createRequestTest(pingData: PingData? = null, extra: ByteArray? = null): RequestTest {
         ProfileManager.ensureInitialized(context)
-        val expressLong = ByteBuffer.wrap("_express".reversed().toByteArray()).long
+        val expressLong = ByteBuffer.wrap("ad_attest".reversed().toByteArray()).long
         return RequestTest(
-                usage = UsageTest(Flow(105, expressLong), "com.android.vending"),
+                usage = UsageTest(Flow(expressLong), "com.google.android.gms"),
                 info = listOf(
                         KeyValuePair("BOARD", Build.BOARD),
                         KeyValuePair("BOOTLOADER", Build.BOOTLOADER),
@@ -164,7 +163,7 @@ class HandleProxyFactory(private val context: Context) {
             //return fetchFromServerTest(flow, createRequestTest())
             return fetchFromServer(flow, createRequest(flow, "com.google.android.gms"))
         } else if (flow?.contains("yt_player") == true) {
-            return fetchFromServer(keyToken, createRequest(keyToken, "com.google.android.gms"))
+            return fetchFromServerTest("ad_attest", createRequestTest())
         }
         return fetchFromServer(flow, createRequest(flow, packageName))
     }
