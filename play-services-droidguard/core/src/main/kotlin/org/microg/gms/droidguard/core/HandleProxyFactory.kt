@@ -17,6 +17,7 @@ import okio.ByteString.Companion.decodeHex
 import okio.ByteString.Companion.of
 import org.microg.gms.common.PackageSpoofUtils;
 import org.microg.gms.droidguard.*
+import org.microg.gms.potokens.PoTokenConstants
 import org.microg.gms.profile.Build
 import org.microg.gms.profile.ProfileManager
 import org.microg.gms.utils.singleInstanceOf
@@ -159,9 +160,11 @@ class HandleProxyFactory(private val context: Context) {
     }
 
     fun fetchFromServer(flow: String?, packageName: String): Triple<String, ByteArray, ByteArray> {
-        if (flow?.contains("po-token-fast") == true) {
+        if (flow?.contains(PoTokenConstants.KEY_TOKEN) == true) {
             //return fetchFromServerTest(flow, createRequestTest())
             return fetchFromServer(flow, createRequest(flow, "com.google.android.gms"))
+        } else if (flow?.contains("yt_player") == true) {
+            return fetchFromServer(PoTokenConstants.KEY_TOKEN, createRequest(PoTokenConstants.KEY_TOKEN, "com.google.android.gms"))
         }
         return fetchFromServer(flow, createRequest(flow, packageName))
     }
