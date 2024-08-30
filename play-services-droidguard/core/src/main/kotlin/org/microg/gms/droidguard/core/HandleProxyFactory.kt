@@ -158,12 +158,9 @@ class HandleProxyFactory(private val context: Context) {
     }
 
     fun fetchFromServer(flow: String?, packageName: String): Triple<String, ByteArray, ByteArray> {
-        val keyToken = "po-token-fast"
-        if (flow?.contains(keyToken) == true) {
+        if (packageName.contains("app.revanced.android.gms") == true) {
             //return fetchFromServerTest(flow, createRequestTest())
             return fetchFromServer(flow, createRequest(flow, "com.google.android.gms"))
-        } else if (flow?.contains("yt_player") == true) {
-            return fetchFromServerTest("ad_attest", createRequestTest())
         }
         return fetchFromServer(flow, createRequest(flow, packageName))
     }
