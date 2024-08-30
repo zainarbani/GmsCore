@@ -110,7 +110,7 @@ class DroidGuardHandleImpl(private val context: Context, private val packageName
 
     companion object {
         private const val TAG = "GmsGuardHandleImpl"
-        private val LOW_LATENCY_ENABLED = false
-        private val NOT_LOW_LATENCY_FLOWS = setOf("ad_attest", "attest", "checkin", "federatedMachineLearningReduced", "msa-f", "ad-event-attest-token")
+        private val LOW_LATENCY_ENABLED = true
+        private val NOT_LOW_LATENCY_FLOWS = setOf("ad_attest", "attest", "federatedMachineLearningReduced", "msa-f", "ad-event-attest-token")
     }
 }
