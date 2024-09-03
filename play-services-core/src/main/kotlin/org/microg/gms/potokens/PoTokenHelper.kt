@@ -122,7 +122,7 @@ class PoTokenHelper(context: Context) {
                 getDroidGuardResult(context, droidGuardResultsRequest, map)?.encodeToByteArray()?.toByteString()
             val tokenRequest =
                 GetPoIntegrityTokenRequest(dgResult = dgResult, dgRandKey = randKeyBuf.toByteString(), mode = 1)
-            return postPoTokenForGms(tokenRequest.encode)
+            return postPoTokenForGms(tokenRequest.encode())
         } catch (e: Throwable) {
             Log.w(TAG, "PoTokenHelper getPoIntegrityToken exception: $e")
         }
