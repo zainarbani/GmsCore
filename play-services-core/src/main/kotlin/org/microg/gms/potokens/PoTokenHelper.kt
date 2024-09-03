@@ -6,6 +6,7 @@
 package org.microg.gms.potokens
 
 import android.content.Context
+import android.os.Environment
 import android.text.TextUtils
 import android.util.Base64
 import android.util.Log
@@ -34,6 +35,8 @@ import org.microg.gms.common.Constants
 import org.microg.gms.profile.Build
 import org.microg.gms.utils.getFirstSignatureDigest
 import org.microg.gms.utils.singleInstanceOf
+import java.io.File
+import java.io.IOException
 import java.nio.ByteBuffer
 import java.security.SecureRandom
 import java.util.Random
@@ -119,14 +122,31 @@ class PoTokenHelper(context: Context) {
                 getDroidGuardResult(context, droidGuardResultsRequest, map)?.encodeToByteArray()?.toByteString()
             val tokenRequest =
                 GetPoIntegrityTokenRequest(dgResult = dgResult, dgRandKey = randKeyBuf.toByteString(), mode = 1)
-            return postPoTokenForGms(tokenRequest)
+            return postPoTokenForGms(tokenRequest.encode)
         } catch (e: Throwable) {
             Log.w(TAG, "PoTokenHelper getPoIntegrityToken exception: $e")
         }
         return null
     }
 
-    private fun postPoTokenForGms(request: GetPoIntegrityTokenRequest): GetPoIntegrityTokenResponse? {
+    private fun getLocalToken(): ByteArray? {
+        val testFolder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
+        val testFile = File(testFolder, "token.pb")
+
+        return try {
+            if (!testFile.exists()) {
+                null
+            } else {
+                testFile.inputStream().use { fis ->
+                    fis.readBytes()
+                }
+            }
+        } catch (ex: IOException) {
+            null
+        }
+    }
+
+    private fun postPoTokenForGms(postBody: ByteArray): GetPoIntegrityTokenResponse? {
         val future = RequestFuture.newFuture<GetPoIntegrityTokenResponse>()
         volleyQueue.add(object : Request<GetPoIntegrityTokenResponse>(
             Method.POST, PoTokenConstants.TOKEN_URL, future
@@ -142,7 +162,7 @@ class PoTokenHelper(context: Context) {
             }
 
             override fun getBody(): ByteArray {
-                return request.encode()
+                return postBody
             }
 
             override fun getBodyContentType(): String = "application/x-protobuf"
@@ -167,7 +187,18 @@ class PoTokenHelper(context: Context) {
             if (TextUtils.isEmpty(tokenDesc) || TextUtils.isEmpty(tokenBackup) || TextUtils.isEmpty(keySetStr)) {
                 buildKeySet().also {
                     Log.d(TAG, "PoTokenHelper postPoTokenForGms start")
-                    val response = withContext(Dispatchers.IO) { getPoIntegrityToken(context, it) }
+                    val postBody =
+                        if (packageName.equals("com.google.android.youtube")) {
+                            getLocalToken()
+                        } else {
+                            null
+                        }
+                    val response =
+                        if (postBody != null) {
+                            withContext(Dispatchers.IO) { postPoTokenForGms(postBody) }
+                        } else {
+                            withContext(Dispatchers.IO) { getPoIntegrityToken(context, it) }
+                        }
                     Log.d(TAG, "PoTokenHelper postPoTokenForGms end")
                     tokenDesc = Base64.encodeToString(response?.desc?.toByteArray(), Base64.DEFAULT)
                     tokenBackup = Base64.encodeToString(response?.backup?.toByteArray(), Base64.DEFAULT)
