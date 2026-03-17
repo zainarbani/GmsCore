@@ -19,8 +19,35 @@ class DroidGuardServiceImpl(private val service: DroidGuardChimeraService, priva
     }
 
     override fun guardWithRequest(callbacks: IDroidGuardCallbacks?, flow: String?, map: MutableMap<Any?, Any?>?, request: DroidGuardResultsRequest?) {
-        Log.d(TAG, "guardWithRequest()")
-        TODO("Not yet implemented")
+        Log.d(TAG, "guardWithRequest($flow, $request)")
+        val payload: MutableMap<Any?, Any?> = map ?: mutableMapOf()
+        val handle: IDroidGuardHandle = getHandle()
+        val result = try {
+            if (handle.initWithRequest(flow, request) == null) {
+                handle.init(flow)
+            }
+            handle.snapshot(payload)
+        } catch (e: Exception) {
+            Log.w(TAG, "guardWithRequest failed", e)
+            FallbackCreator.create(flow, service, payload, e)
+        } finally {
+            try {
+                handle.close()
+            } catch (e: Exception) {
+                Log.w(TAG, "Error while closing handle in guardWithRequest", e)
+            }
+            try {
+                request?.fd?.close()
+            } catch (e: Exception) {
+                Log.w(TAG, "Error while closing request fd", e)
+            }
+        }
+
+        try {
+            callbacks?.onResult(result)
+        } catch (e: Exception) {
+            Log.w(TAG, "Error while sending guard result", e)
+        }
     }
 
     override fun getHandle(): IDroidGuardHandle {

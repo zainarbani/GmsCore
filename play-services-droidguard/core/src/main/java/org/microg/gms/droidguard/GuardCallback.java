@@ -5,10 +5,13 @@
 
 package org.microg.gms.droidguard;
 
+import android.content.ContentValues;
 import android.content.Context;
+import android.database.sqlite.SQLiteDatabase;
 import android.media.MediaDrm;
 import android.util.Log;
 
+import org.microg.gms.droidguard.core.DgpDatabaseHelper;
 import org.microg.gms.droidguard.core.FallbackCreator;
 import org.microg.gms.settings.SettingsContract;
 
@@ -68,13 +71,25 @@ public class GuardCallback {
     }
 
     public final void e(final int task) {
-        Log.d(TAG, "e[?](" + task + ")");
-        // TODO: Open database
-        if (task == 1) {
-            // TODO
-        } else if (task == 0) {
-            // TODO
+        DgpDatabaseHelper helper = new DgpDatabaseHelper(context);
+        SQLiteDatabase db = null;
+        try {
+            db = helper.getWritableDatabase();
+            db.beginTransaction();
+            db.delete("t", null, null);
+            if (task == 0 || task == 1) {
+                ContentValues values = new ContentValues();
+                values.put("a", new byte[]{(byte) task});
+                db.insert("t", null, values);
+            }
+            db.setTransactionSuccessful();
+        } catch (Throwable t) {
+            Log.w(TAG, "Failed to persist callback task state", t);
+        } finally {
+            if (db != null && db.inTransaction()) {
+                db.endTransaction();
+            }
+            helper.close();
         }
-        // TODO: Set value in database
     }
 }
